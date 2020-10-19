@@ -1,7 +1,6 @@
 
 service: tooling-s3-sqs
 
-
 provider:
   name: aws
   runtime: nodejs12.x

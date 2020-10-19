@@ -1,5 +1,12 @@
 class Handler {
-  async main(event) {
+  async main({ Records: records }) {
+    const [{ body, messageId }] = records;
+    const item = JSON.parse(body);
+
+    console.log('event', JSON.stringify({
+      ...item,
+      messageId,
+    }, null, 2))
     try {
       return {
         statusCode: 200,

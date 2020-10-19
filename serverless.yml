@@ -5,22 +5,71 @@ service: tooling-s3-sqs
 provider:
   name: aws
   runtime: nodejs12.x
-  
+  memory: 128
+  stage: ${opt:stage, "dev"}
+  environment:
+    BUCKET_NAME: aaa-my-bucket-001
+    SQS_QUEUE: file-handler
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+        - sqs:GetQueueUrl
+        - sqs:CreateQueue
+        - sqs:ReceiveMessage
+      Resource: ${self:custom.sqsArn} # ta aqui pq criei no resources
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource:
+        - arn:aws:s3:::${self:provider.environment.BUCKET_NAME}/* # pra acessar o bucket
+        - arn:aws:s3:::${self:provider.environment.BUCKET_NAME} # pra criar o bucket
+
 plugins:
   - serverless-localstack
-  - serverless-mocha-plugin
   - serverless-offline
 
 custom:
+  sqsArn:
+    Fn::GetAtt: # function of aws to get arn attr
+      - SQSQueue
+      - Arn
+
+  localstack:
+    stages:
+      - local
+    # disable the localstack when is deployed
+    autostart: false
   serverless-offline:
     useChildProcesses: true
 
+package:
+  individually: true
+  excludeDevDependencies: true
+
 functions:
-  hello:
-    handler: handler.hello
+  s3listener:
+    handler: src/index.s3listener
     events:
-      - http:
-          method: get
-          path: hello
+      - s3:
+          bucket: ${self:provider.environment.BUCKET_NAME}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .csv
+
+  sqslistener:
+    handler: src/index.sqslistener
+    events:
+      - sqs:
+          batchSize: 1
+          arn: ${self:custom.sqsArn}
+
+resources:
+  Resources:
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.environment.SQS_QUEUE}
+        VisibilityTimeout: 60
 
 

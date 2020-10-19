@@ -8,9 +8,11 @@ services:
       - "8080:8080"
       - "4566:4566"
       - "4571:4571"
+      - "4576:4576"
     environment:
-      - SERVICES=s3
+      - SERVICES=s3,sqs
       - LAMBDA_EXECUTOR=local
+      - LAMBDA_REMOTE_DOCKER=false
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
@@ -32,6 +34,7 @@ services:
     environment: 
         LOCALSTACK_HOST: localstack
         S3_PORT: 4566
+        SQS_PORT: 4566
 
 volumes:
     nodemodules: {}
